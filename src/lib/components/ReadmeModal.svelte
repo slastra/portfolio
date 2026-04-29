@@ -17,7 +17,12 @@
 
 	onMount(() => {
 		dialogEl?.showModal();
+		const previousOverflow = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
 		load();
+		return () => {
+			document.body.style.overflow = previousOverflow;
+		};
 	});
 
 	async function load() {
