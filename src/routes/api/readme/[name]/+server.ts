@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import markedShiki from 'marked-shiki';
 import { createHighlighter, type Highlighter } from 'shiki';
 import DOMPurify from 'isomorphic-dompurify';
-import { fetchRepos, githubHeaders } from '$lib/github';
+import { fetchRepos, githubHeaders } from '$lib/github.server';
 import type { RequestHandler } from './$types';
 
 type ReadmeEntry = { html: string; fetchedAt: number };
