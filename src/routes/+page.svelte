@@ -26,6 +26,11 @@
 	<meta property="og:description" content="Public projects by Shaun Lastra." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://dev.lastra.us" />
+	<meta property="og:image" content="https://dev.lastra.us/og.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content="https://dev.lastra.us/og.png" />
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">

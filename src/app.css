@@ -206,7 +206,6 @@
 }
 
 .readme-prose pre {
-	background: color-mix(in oklch, var(--accent) 60%, transparent);
 	border: 1px solid var(--border);
 	border-radius: 0.5rem;
 	padding: 1em 1.2em;
@@ -216,12 +215,17 @@
 	line-height: 1.55;
 }
 
+.readme-prose pre:not(.shiki) {
+	background: color-mix(in oklch, var(--accent) 60%, transparent);
+}
+
 .readme-prose pre code {
 	background: transparent;
-	color: var(--foreground);
+	color: inherit;
 	padding: 0;
 	border: none;
 	font-size: inherit;
+	font-family: var(--font-mono);
 }
 
 .readme-prose hr {

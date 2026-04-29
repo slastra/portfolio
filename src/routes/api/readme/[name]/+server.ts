@@ -1,14 +1,67 @@
 import { error, json } from '@sveltejs/kit';
 import { marked } from 'marked';
+import markedShiki from 'marked-shiki';
+import { createHighlighter, type Highlighter } from 'shiki';
 import DOMPurify from 'isomorphic-dompurify';
-import { fetchRepos } from '$lib/github';
+import { fetchRepos, githubHeaders } from '$lib/github';
 import type { RequestHandler } from './$types';
 
 type ReadmeEntry = { html: string; fetchedAt: number };
 const TTL_MS = 30 * 60 * 1000;
 const cache = new Map<string, ReadmeEntry>();
 
-marked.setOptions({ gfm: true });
+let highlighterPromise: Promise<Highlighter> | null = null;
+function getHighlighter(): Promise<Highlighter> {
+	highlighterPromise ??= createHighlighter({
+		themes: ['rose-pine'],
+		langs: [
+			'typescript',
+			'javascript',
+			'tsx',
+			'jsx',
+			'svelte',
+			'vue',
+			'html',
+			'css',
+			'json',
+			'rust',
+			'go',
+			'zig',
+			'python',
+			'c',
+			'cpp',
+			'bash',
+			'shell',
+			'toml',
+			'yaml',
+			'markdown',
+			'sql',
+			'lua',
+			'ruby',
+			'java',
+			'swift',
+			'kotlin',
+			'nix',
+			'dockerfile'
+		]
+	});
+	return highlighterPromise;
+}
+
+const renderer = marked.use(
+	markedShiki({
+		async highlight(code, lang) {
+			const highlighter = await getHighlighter();
+			const langs = highlighter.getLoadedLanguages();
+			const safeLang = lang && langs.includes(lang as never) ? lang : 'text';
+			return highlighter.codeToHtml(code, {
+				lang: safeLang,
+				theme: 'rose-pine'
+			});
+		}
+	})
+);
+renderer.setOptions({ gfm: true });
 
 export const GET: RequestHandler = async ({ params }) => {
 	const name = params.name;
@@ -23,17 +76,14 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	const res = await fetch(`https://api.github.com/repos/slastra/${name}/readme`, {
-		headers: {
-			Accept: 'application/vnd.github.raw',
-			'User-Agent': 'dev.lastra.us'
-		}
+		headers: { ...githubHeaders(), Accept: 'application/vnd.github.raw' }
 	});
 
 	if (res.status === 404) return json({ html: '' });
 	if (!res.ok) throw error(502, `GitHub API ${res.status}`);
 
 	const md = await res.text();
-	const rendered = await marked.parse(md);
+	const rendered = await renderer.parse(md, { async: true });
 	const html = DOMPurify.sanitize(rendered);
 
 	cache.set(name, { html, fetchedAt: Date.now() });

@@ -1,3 +1,14 @@
+import { env } from '$env/dynamic/private';
+
+export function githubHeaders(): Record<string, string> {
+	const headers: Record<string, string> = {
+		Accept: 'application/vnd.github+json',
+		'User-Agent': 'dev.lastra.us'
+	};
+	if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
+	return headers;
+}
+
 export type Repo = {
 	name: string;
 	description: string | null;
@@ -67,9 +78,7 @@ const ERROR_BACKOFF_MS = 30 * 1000;
 
 async function load(): Promise<CacheEntry> {
 	const apiUrl = `https://api.github.com/users/${USER}/repos?per_page=100&type=owner&sort=updated`;
-	const res = await fetch(apiUrl, {
-		headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'dev.lastra.us' }
-	});
+	const res = await fetch(apiUrl, { headers: githubHeaders() });
 	if (!res.ok) throw new Error(`GitHub API ${res.status}`);
 	const raw = (await res.json()) as RepoApiPayload[];
 
