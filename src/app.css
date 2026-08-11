@@ -129,6 +129,60 @@
 	animation: fade-up 600ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
 }
 
+/* Analogue-TV tuning noise for the banner while media loads. The tile is a mask rather than a
+   picture, so the colour comes from a Rosé Pine surface var and follows the theme into light and
+   dark instead of being baked in. Its 10px blocks are pre-rasterised at 1:1, so the chunkiness
+   never depends on image-rendering: pixelated being honoured on masks.
+
+   One flat colour is enough: the mask carries per-block alpha, so a single tone already resolves
+   into a range of intensities and the noise reads as static without any gradient. */
+.tv-static {
+	background-color: var(--muted-foreground);
+	-webkit-mask-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAQAAAAHUWYVAAAEsUlEQVR42u2dWYiNYRiAzzBKliwX9sh+YWwhZBt79mRtpCSUCxKuZJssJVtK9hRZstQwIkuasRQXdqYYkpiyZLlBRI37f56LN/80TTzP5ZPxn/M9fV995/zn+7PKM0FWgNsIbhS4y8Fr9AN3G1w9cF+D16gF7gq43OD/twTcSnCLwB2vqGpkpFphEIOIQQwiBjGIGMQgUtVkZ76DrQNucnCnfjnFq1kHbiS4SeCag9sCbnSKXTnRBFxLcD/BzXaGuGSJQQwiBjGIGMQgYhBJkFVOO9y34M6BKwW3DNxMcO/B7QBH36kvAPcDXO3gKBwFNwtcN3CPwOWD6wyuwBnikiUGMYgYxCBiEIOIQSRBduZScEf6DFwJuDxw18CdABf9XnxNcFe+PfgJwYzgaxmWYqTp04o2zhCXLDGIQcQgBhGDGEQMIgmyytP89YngrjfKA3A9wDUF1wfcJnDvwDUE1yvF+6BPMFrGrusMcckSgxhEDGIQMYhBxCDu1FOQE9zhHqrkVz0V3D5wB8AVgusOjr5Tp5PinoN7DK49uDfOEJcsMYhBxCAGEYMYRAwilbpTXwpu2z88Wg/B7QW3yxnikiUGMYgYxCAOgUHEIAaRvyQ7/C/pZLfe4OCUNDxLvqSS30kxuNzg334CNw0cffc+JngN+o37eWeIS5YYxCBiEIOIQQwiBpEEWeV3wRaBW57iKifB0d3qC8FNCV6Dng43BNwDcF/A0WcYr8HNBTcI3A1niEuWGMQgYhCDiEHEIAaR0E49zV9vBjcPHD2hjJ5u1hjcN3CNqmBkFoNbBO5DcAzoefQDnCEuWWIQg4hBDCIGMYgYRBLw3e+rwc0BR7/bPhfcgTcDdxbcJHAXwA0GVy84Ch/BnQbXMcVI07i8cIa4ZIlBDCIGMYgYxCBiEAnt1IeCawHuILj14MaDexrclX8FtwEcfb//NrjbLgPXuZJHugO42c4QlywxiEHEIAYRgxhEDCIJ0t39/hJcO3CtwOWCWxvcWb8CR09uawDuN7hicHSH/ZfguMBJcZlxsffmDHHJEoMYRAxiEDGIQcQg//1OfQ/Yi+DOgKOT0+hO9zngJgddQfCdnAK3FVyL4C6/Pzg66346uHvgasberzPEJUsMYhAxiEHEIAYRg/z3O/XmYHPAvQF3HdwRcCPA0e/UmwR37/QM81JwA4OjQJ8ufE4xqvnguoHr4gxxyRKDGEQMYhAxiEHEIFJhp052J7j34NaBewKuDbj6wd0x7aK7gqPvsW+Bo5Pn6oLrCe5mipHeDW6hM8QlSwxiEDGIQcQgBhGDSILszESwq8BFf6NNz0m/E/xb2jHTefDDwdVKMQqHwUWf4053tcOZ7vibfmeIS5YYxCBiEIOIQQwiBpGKO/VCsK/BLQfXD9zS4JU3gaOnqv0CR9/vLwvu6MeCax18zXfBTQDXFhx9IlLmDHHJEoMYRAxiEDGIQcQgkiB+9js9ua2oGr2TY+DywNGpcHeq4PXtB1foDHHJEoMYRAxiEDGIQcQgkoCfp94puBOm0+iugpsYvMYOcPS78r7g6MS7H+Bqg6OT8e6Do3sNtgZHer4zxCVLDGIQMYhBxCBiEINIgD+Wi5ow3dWi4gAAAABJRU5ErkJggg==");
+	mask-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAQAAAAHUWYVAAAEsUlEQVR42u2dWYiNYRiAzzBKliwX9sh+YWwhZBt79mRtpCSUCxKuZJssJVtK9hRZstQwIkuasRQXdqYYkpiyZLlBRI37f56LN/80TTzP5ZPxn/M9fV995/zn+7PKM0FWgNsIbhS4y8Fr9AN3G1w9cF+D16gF7gq43OD/twTcSnCLwB2vqGpkpFphEIOIQQwiBjGIGMQgUtVkZ76DrQNucnCnfjnFq1kHbiS4SeCag9sCbnSKXTnRBFxLcD/BzXaGuGSJQQwiBjGIGMQgYhBJkFVOO9y34M6BKwW3DNxMcO/B7QBH36kvAPcDXO3gKBwFNwtcN3CPwOWD6wyuwBnikiUGMYgYxCBiEIOIQSRBduZScEf6DFwJuDxw18CdABf9XnxNcFe+PfgJwYzgaxmWYqTp04o2zhCXLDGIQcQgBhGDGEQMIgmyytP89YngrjfKA3A9wDUF1wfcJnDvwDUE1yvF+6BPMFrGrusMcckSgxhEDGIQMYhBxCDu1FOQE9zhHqrkVz0V3D5wB8AVgusOjr5Tp5PinoN7DK49uDfOEJcsMYhBxCAGEYMYRAwilbpTXwpu2z88Wg/B7QW3yxnikiUGMYgYxCAOgUHEIAaRvyQ7/C/pZLfe4OCUNDxLvqSS30kxuNzg334CNw0cffc+JngN+o37eWeIS5YYxCBiEIOIQQwiBpEEWeV3wRaBW57iKifB0d3qC8FNCV6Dng43BNwDcF/A0WcYr8HNBTcI3A1niEuWGMQgYhCDiEHEIAaR0E49zV9vBjcPHD2hjJ5u1hjcN3CNqmBkFoNbBO5DcAzoefQDnCEuWWIQg4hBDCIGMYgYRBLw3e+rwc0BR7/bPhfcgTcDdxbcJHAXwA0GVy84Ch/BnQbXMcVI07i8cIa4ZIlBDCIGMYgYxCBiEAnt1IeCawHuILj14MaDexrclX8FtwEcfb//NrjbLgPXuZJHugO42c4QlywxiEHEIAYRgxhEDCIJ0t39/hJcO3CtwOWCWxvcWb8CR09uawDuN7hicHSH/ZfguMBJcZlxsffmDHHJEoMYRAxiEDGIQcQg//1OfQ/Yi+DOgKOT0+hO9zngJgddQfCdnAK3FVyL4C6/Pzg66346uHvgasberzPEJUsMYhAxiEHEIAYRg/z3O/XmYHPAvQF3HdwRcCPA0e/UmwR37/QM81JwA4OjQJ8ufE4xqvnguoHr4gxxyRKDGEQMYhAxiEHEIFJhp052J7j34NaBewKuDbj6wd0x7aK7gqPvsW+Bo5Pn6oLrCe5mipHeDW6hM8QlSwxiEDGIQcQgBhGDSILszESwq8BFf6NNz0m/E/xb2jHTefDDwdVKMQqHwUWf4053tcOZ7vibfmeIS5YYxCBiEIOIQQwiBpGKO/VCsK/BLQfXD9zS4JU3gaOnqv0CR9/vLwvu6MeCax18zXfBTQDXFhx9IlLmDHHJEoMYRAxiEDGIQcQgkiB+9js9ua2oGr2TY+DywNGpcHeq4PXtB1foDHHJEoMYRAxiEDGIQcQgkoCfp94puBOm0+iugpsYvMYOcPS78r7g6MS7H+Bqg6OT8e6Do3sNtgZHer4zxCVLDGIQMYhBxCBiEINIgD+Wi5ow3dWi4gAAAABJRU5ErkJggg==");
+	-webkit-mask-size: 200px 200px;
+	mask-size: 200px 200px;
+	-webkit-mask-repeat: repeat;
+	mask-repeat: repeat;
+	opacity: 0.55;
+	animation: tv-static-grain 420ms steps(1, end) infinite;
+}
+
+@keyframes tv-static-grain {
+	0% {
+		-webkit-mask-position: 0 0;
+		mask-position: 0 0;
+	}
+	20% {
+		-webkit-mask-position: -50px 30px;
+		mask-position: -50px 30px;
+	}
+	40% {
+		-webkit-mask-position: 40px -30px;
+		mask-position: 40px -30px;
+	}
+	60% {
+		-webkit-mask-position: -30px -60px;
+		mask-position: -30px -60px;
+	}
+	80% {
+		-webkit-mask-position: 70px 20px;
+		mask-position: 70px 20px;
+	}
+	100% {
+		-webkit-mask-position: -20px 50px;
+		mask-position: -20px 50px;
+	}
+}
+
+
+
+@media (prefers-reduced-motion: reduce) {
+	.tv-static {
+		animation: none;
+	}
+}
+
 .readme-prose {
 	color: var(--foreground);
 	font-family: var(--font-sans);

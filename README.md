@@ -20,6 +20,8 @@ bun run start
 
 The page fetches `https://api.github.com/users/slastra/repos` server-side at request time with a 10-minute in-memory cache. Each card opens a modal that renders the repo's README via `marked` + `isomorphic-dompurify`, cached per-repo for 30 minutes. Code blocks in the modal are highlighted with [Shiki](https://shiki.style) using the Rosé Pine theme.
 
+A repo with a `docs/screenshot.*` or root `screenshot.*` gets that image as a banner on its card. Detection is a single GraphQL query that reads the root and `docs/` trees of every repo at once, on the same 10-minute cache as the repo list. GraphQL needs a token, so without `GITHUB_TOKEN` the lookup is skipped and cards render without banners rather than spending the anonymous REST budget on per-repo calls.
+
 ## Credits
 
 Color palette by [Rosé Pine](https://rosepinetheme.com) — *all natural pine, faux fur and a bit of soho vibes for the classy minimalist*. Used here under their MIT-style licence; the visible accents (`rose`, `love`, `gold`, `pine`, `foam`, `iris`) are theirs.

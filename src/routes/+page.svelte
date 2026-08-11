@@ -7,6 +7,14 @@
 
 	let { data } = $props();
 
+	// Tilt direction is assigned by position among the banner-bearing repos rather than drawn
+	// from each repo's name hash. Independent per-name draws have no mechanism keeping the two
+	// directions balanced — the first cut hashed 8 of 9 counter-clockwise, which reads as a
+	// deliberate lean. Ranking here guarantees an even split; the angle itself stays hashed.
+	const bannerRank = $derived(
+		new Map(data.repos.filter((r) => r.media).map((r, i) => [r.name, i]))
+	);
+
 	const formattedDate = $derived(
 		new Date(data.fetchedAt).toLocaleDateString('en-US', {
 			month: 'long',
@@ -100,7 +108,12 @@
 			>
 				{#each data.repos as repo, i (repo.name)}
 					<div class="reveal" style="animation-delay: {Math.min(i * 35, 600)}ms">
-						<RepoCard {repo} index={i} total={data.repos.length} />
+						<RepoCard
+							{repo}
+							index={i}
+							total={data.repos.length}
+							bannerRank={bannerRank.get(repo.name) ?? 0}
+						/>
 					</div>
 				{/each}
 			</div>

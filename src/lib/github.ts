@@ -8,6 +8,19 @@ export type Repo = {
 	forks: number;
 	archived: boolean;
 	pushed_at: string;
+	/** Card banner pulled from the repo, or null when it has neither a screenshot nor a demo. */
+	media: RepoMedia | null;
+};
+
+/**
+ * Both are kept rather than picking one server-side: whether a video is actually playable
+ * depends on its codec, which the file tree can't tell us (hyprglaze's demo.mp4 is HEVC, which
+ * Chrome won't decode on Linux). The card prefers the video and falls back to the image if the
+ * browser refuses it.
+ */
+export type RepoMedia = {
+	video: string | null;
+	image: string | null;
 };
 
 type Accent = 'rose' | 'love' | 'gold' | 'pine' | 'foam' | 'iris';
