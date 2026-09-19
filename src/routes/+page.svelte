@@ -4,8 +4,11 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import GithubIcon from '$lib/components/GithubIcon.svelte';
 	import { mode, toggleMode } from 'mode-watcher';
+	import { buildJsonLd, jsonLdScript, PAGE_DESCRIPTION, PAGE_TITLE, PERSON, SITE_URL } from '$lib/seo';
 
 	let { data } = $props();
+
+	const jsonLd = $derived(jsonLdScript(buildJsonLd(data.repos, data.fetchedAt)));
 
 	// Tilt direction is assigned by position among the banner-bearing repos rather than drawn
 	// from each repo's name hash. Independent per-name draws have no mechanism keeping the two
@@ -25,20 +28,30 @@
 </script>
 
 <svelte:head>
-	<title>dev.lastra.us — projects by shaun lastra</title>
-	<meta
-		name="description"
-		content="Public projects by Shaun Lastra. A live index of open-source work pulled directly from GitHub."
-	/>
-	<meta property="og:title" content="dev.lastra.us" />
-	<meta property="og:description" content="Public projects by Shaun Lastra." />
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://dev.lastra.us" />
-	<meta property="og:image" content="https://dev.lastra.us/og.png" />
+	<title>{PAGE_TITLE}</title>
+	<meta name="description" content={PAGE_DESCRIPTION} />
+	<meta name="author" content={PERSON.name} />
+	<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+	<link rel="canonical" href="{SITE_URL}/" />
+	<link rel="me" href="https://github.com/slastra" />
+	<meta property="og:site_name" content="dev.lastra.us" />
+	<meta property="og:title" content={PAGE_TITLE} />
+	<meta property="og:description" content={PAGE_DESCRIPTION} />
+	<meta property="og:type" content="profile" />
+	<meta property="profile:first_name" content={PERSON.givenName} />
+	<meta property="profile:last_name" content={PERSON.familyName} />
+	<meta property="profile:username" content="slastra" />
+	<meta property="og:url" content="{SITE_URL}/" />
+	<meta property="og:image" content="{SITE_URL}/og.png" />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="dev.lastra.us — projects by Shaun Lastra" />
+	<meta property="og:locale" content="en_US" />
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:image" content="https://dev.lastra.us/og.png" />
+	<meta name="twitter:title" content={PAGE_TITLE} />
+	<meta name="twitter:description" content={PAGE_DESCRIPTION} />
+	<meta name="twitter:image" content="{SITE_URL}/og.png" />
+	{@html jsonLd}
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">
@@ -56,6 +69,10 @@
 							class="text-foreground/70 italic font-normal"
 						>lastra.us</span>
 					</h1>
+					<p class="font-heading text-lg sm:text-xl text-foreground/80 mt-2 max-w-2xl leading-snug">
+						<span class="font-semibold text-foreground">{PERSON.name}</span><span
+							class="text-muted-foreground px-1.5">·</span>{PERSON.description.replace(/^Software developer\. /, '')}
+					</p>
 					<p class="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mt-1">
 						{data.repos.length} public projects · synced {formattedDate}
 					</p>
