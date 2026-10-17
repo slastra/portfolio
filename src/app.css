@@ -218,6 +218,26 @@
 
 .readme-prose p { margin: 0.9em 0; }
 
+/* Anchors are injected by readme.server.ts. They hang in the gutter so the heading text stays
+   flush with the body copy, and only show on hover or keyboard focus. */
+.readme-prose :is(h1, h2, h3, h4, h5, h6) { position: relative; scroll-margin-top: 1.5rem; }
+.readme-prose a.heading-anchor {
+	position: absolute;
+	right: 100%;
+	padding-right: 0.3em;
+	font-family: var(--font-mono);
+	font-weight: 400;
+	color: var(--muted-foreground);
+	text-decoration: none;
+	opacity: 0;
+	transition: opacity 150ms, color 150ms;
+}
+.readme-prose :is(h1, h2, h3, h4, h5, h6):hover > a.heading-anchor,
+.readme-prose a.heading-anchor:focus-visible {
+	opacity: 1;
+}
+.readme-prose a.heading-anchor:hover { color: var(--primary); }
+
 .readme-prose a {
 	color: var(--primary);
 	text-decoration: underline;

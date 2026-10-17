@@ -27,6 +27,9 @@ type RepoApiPayload = {
 	forks_count: number;
 	archived: boolean;
 	pushed_at: string;
+	created_at: string;
+	topics?: string[];
+	license: { spdx_id: string | null } | null;
 	fork: boolean;
 };
 
@@ -173,6 +176,10 @@ async function load(): Promise<CacheEntry> {
 			forks: r.forks_count,
 			archived: r.archived,
 			pushed_at: r.pushed_at,
+			created_at: r.created_at,
+			topics: r.topics ?? [],
+			// GitHub reports NOASSERTION for a LICENSE file it found but couldn't classify.
+			license: r.license?.spdx_id && r.license.spdx_id !== 'NOASSERTION' ? r.license.spdx_id : null,
 			media: screenshots.get(r.name) ?? null
 		}));
 

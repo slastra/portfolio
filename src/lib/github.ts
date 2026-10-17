@@ -8,6 +8,10 @@ export type Repo = {
 	forks: number;
 	archived: boolean;
 	pushed_at: string;
+	created_at: string;
+	topics: string[];
+	/** SPDX id, or null when GitHub couldn't identify one. */
+	license: string | null;
 	/** Card banner pulled from the repo, or null when it has neither a screenshot nor a demo. */
 	media: RepoMedia | null;
 };
@@ -24,6 +28,17 @@ export type RepoMedia = {
 };
 
 type Accent = 'rose' | 'love' | 'gold' | 'pine' | 'foam' | 'iris';
+
+// Rosé Pine's dark-variant hex values, for contexts that can't resolve the CSS variables (the
+// satori-rendered OG images, which also don't understand oklch).
+export const accentHex: Record<Accent, string> = {
+	rose: '#ebbcba',
+	love: '#eb6f92',
+	gold: '#f6c177',
+	pine: '#31748f',
+	foam: '#9ccfd8',
+	iris: '#c4a7e7'
+};
 
 const languageAccent: Record<string, Accent> = {
 	TypeScript: 'foam',
@@ -46,6 +61,12 @@ const languageAccent: Record<string, Accent> = {
 	Kotlin: 'iris',
 	Nix: 'foam'
 };
+
+/** Hex accent for a language, or Rosé Pine's muted grey when it has none. */
+export function languageHex(lang: string | null): string {
+	const accent = lang ? languageAccent[lang] : undefined;
+	return accent ? accentHex[accent] : '#6e6a86';
+}
 
 export function languageColor(lang: string | null): string {
 	if (!lang) return 'var(--muted-foreground)';

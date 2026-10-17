@@ -1,14 +1,31 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import RepoCard from '#lib/components/RepoCard.svelte';
+	import ReadmeModal from '#lib/components/ReadmeModal.svelte';
+	import Seo from '#lib/components/Seo.svelte';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import GithubIcon from '#lib/components/GithubIcon.svelte';
 	import { mode, toggleMode } from 'mode-watcher';
-	import { buildJsonLd, jsonLdScript, PAGE_DESCRIPTION, PAGE_TITLE, PERSON, SITE_URL } from '#lib/seo.js';
+	import { buildJsonLd, DEFAULT_OG_IMAGE, PAGE_DESCRIPTION, PAGE_TITLE, PERSON } from '#lib/seo.js';
 
 	let { data } = $props();
 
-	const jsonLd = $derived(jsonLdScript(buildJsonLd(data.repos, data.fetchedAt)));
+	const jsonLd = $derived(buildJsonLd(data.repos, data.fetchedAt));
+
+	// However the modal closes (Esc, the close button, Back), keyboard focus goes back to the card
+	// that opened it. The dialog's own focus restore doesn't cover Back, which unmounts it without
+	// a close(), and Safari never focused the clicked link to begin with.
+	let openProject: string | null = null;
+	$effect(() => {
+		const name = page.state.project?.repo.name ?? null;
+		if (!name && openProject) {
+			document
+				.querySelector<HTMLElement>(`[data-project-title="${CSS.escape(openProject)}"]`)
+				?.focus({ preventScroll: true });
+		}
+		openProject = name;
+	});
 
 	// Tilt direction is assigned by position among the banner-bearing repos rather than drawn
 	// from each repo's name hash. Independent per-name draws have no mechanism keeping the two
@@ -27,32 +44,20 @@
 	);
 </script>
 
-<svelte:head>
-	<title>{PAGE_TITLE}</title>
-	<meta name="description" content={PAGE_DESCRIPTION} />
-	<meta name="author" content={PERSON.name} />
-	<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-	<link rel="canonical" href="{SITE_URL}/" />
+<Seo
+	title={PAGE_TITLE}
+	description={PAGE_DESCRIPTION}
+	path="/"
+	image={DEFAULT_OG_IMAGE}
+	imageAlt="dev.lastra.us — projects by {PERSON.name}"
+	ogType="profile"
+	{jsonLd}
+>
 	<link rel="me" href="https://github.com/slastra" />
-	<meta property="og:site_name" content="dev.lastra.us" />
-	<meta property="og:title" content={PAGE_TITLE} />
-	<meta property="og:description" content={PAGE_DESCRIPTION} />
-	<meta property="og:type" content="profile" />
 	<meta property="profile:first_name" content={PERSON.givenName} />
 	<meta property="profile:last_name" content={PERSON.familyName} />
 	<meta property="profile:username" content="slastra" />
-	<meta property="og:url" content="{SITE_URL}/" />
-	<meta property="og:image" content="{SITE_URL}/og.png" />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="dev.lastra.us — projects by Shaun Lastra" />
-	<meta property="og:locale" content="en_US" />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={PAGE_TITLE} />
-	<meta name="twitter:description" content={PAGE_DESCRIPTION} />
-	<meta name="twitter:image" content="{SITE_URL}/og.png" />
-	{@html jsonLd}
-</svelte:head>
+</Seo>
 
 <div class="min-h-screen flex flex-col">
 	<header class="border-b border-border/40">
@@ -148,3 +153,13 @@
 		</div>
 	</footer>
 </div>
+
+<!-- Opened by RepoCard through a shallow navigation, so the URL already reads /projects/<name>.
+     Closing goes back through history rather than just clearing state, or Back would reopen it. -->
+{#if page.state.project}
+	<ReadmeModal
+		repo={page.state.project.repo}
+		html={page.state.project.readme}
+		onclose={() => history.back()}
+	/>
+{/if}

@@ -3,37 +3,43 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import GithubIcon from './GithubIcon.svelte';
 	import type { Repo } from '#lib/github.js';
+	import { projectTitle } from '#lib/seo.js';
 
 	interface Props {
 		repo: Repo;
+		/** Rendered README from the project page's load; null when GitHub couldn't be reached. */
+		html: string | null;
 		onclose: () => void;
 	}
 
-	let { repo, onclose }: Props = $props();
+	let { repo, html, onclose }: Props = $props();
 
 	let dialogEl = $state<HTMLDialogElement>();
-	let html = $state<string | null>(null);
-	let error = $state<string | null>(null);
 
 	onMount(() => {
 		dialogEl?.showModal();
 		const previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
-		load();
+		// The URL already reads /projects/<name>, so the tab should say so too.
+		const previousTitle = document.title;
+		document.title = projectTitle(repo.name);
 		return () => {
 			document.body.style.overflow = previousOverflow;
+			document.title = previousTitle;
 		};
 	});
 
-	async function load() {
-		try {
-			const res = await fetch(`/api/readme/${repo.name}`);
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = (await res.json()) as { html: string };
-			html = data.html;
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load readme';
-		}
+	// A README's table of contents links to #section ids. Letting those through would change the
+	// URL hash under the shallow route, so scroll the dialog to the heading instead.
+	function followHashLink(event: MouseEvent) {
+		const link = (event.target as Element).closest('a[href^="#"]');
+		if (!link || !dialogEl) return;
+		const id = decodeURIComponent(link.getAttribute('href')!.slice(1));
+		const target = dialogEl.querySelector(`[id="${CSS.escape(id)}"]`);
+		if (!target) return;
+		event.preventDefault();
+		const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		target.scrollIntoView({ behavior: reduceMotion ? 'instant' : 'smooth', block: 'start' });
 	}
 
 	function close() {
@@ -67,18 +73,16 @@
 		</header>
 
 		<div class="flex-1 overflow-y-auto px-6 py-6">
-			{#if error}
+			{#if html === null}
 				<p class="font-mono text-xs uppercase tracking-wider text-destructive">
-					{error}
+					Couldn't load the readme from GitHub.
 				</p>
-			{:else if html === null}
-				<div class="flex items-center justify-center py-16">
-					<div class="size-6 rounded-full border-2 border-border border-t-primary animate-spin"></div>
-				</div>
 			{:else if html === ''}
 				<p class="text-muted-foreground italic text-center py-16">No readme.</p>
 			{:else}
-				<div class="readme-prose">
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions
+				     (delegated: the clicks are on the links inside, which are keyboard-reachable) -->
+				<div class="readme-prose" onclick={followHashLink}>
 					{@html html}
 				</div>
 			{/if}

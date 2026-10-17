@@ -3,11 +3,10 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-// /og and /static-preview are render scratch pages; /api is JSON. None should compete with the
-// index for the name query.
+// /og and /static-preview are render scratch pages; neither should compete with the index for
+// the name query.
 const body = `User-agent: *
 Allow: /
-Disallow: /api/
 Disallow: /og
 Disallow: /static-preview
 
