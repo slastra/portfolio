@@ -76,7 +76,7 @@
 					</h1>
 					<p class="font-heading text-lg sm:text-xl text-foreground/80 mt-2 max-w-2xl leading-snug">
 						<span class="font-semibold text-foreground">{PERSON.name}</span><span
-							class="text-muted-foreground px-1.5">·</span>{PERSON.description.replace(/^Software developer\. /, '')}
+							class="text-muted-foreground px-1.5">·</span>{PERSON.description}
 					</p>
 					<p class="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mt-1">
 						{data.repos.length} public projects · synced {formattedDate}

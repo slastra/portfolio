@@ -7,9 +7,13 @@ export const PERSON = {
 	name: 'Shaun Lastra',
 	givenName: 'Shaun',
 	familyName: 'Lastra',
-	// Mirrors the GitHub profile bio; keep the two in sync so the entity reads the same everywhere.
-	description:
-		'Software developer. Builds operations and commerce tools for the liquidation industry, Linux desktop and CLI utilities, and Nuxt and Svelte apps.',
+	// The list the bio is built around. The description (the GitHub profile bio, word for word) and the
+	// index's meta description are both built from it, so keep it in sync with GitHub.
+	makes:
+		'operations and commerce tools for the liquidation industry, Linux desktop utilities, CLIs, Nuxt/Svelte apps, and the odd gadget',
+	get description() {
+		return `Maker of ${this.makes}.`;
+	},
 	jobTitle: 'Software Developer',
 	image: 'https://avatars.githubusercontent.com/u/34750676?v=4',
 	// Every public profile that is unambiguously the same person. Search engines reconcile the
@@ -22,7 +26,7 @@ export const PERSON = {
 } as const;
 
 export const PAGE_TITLE = `${PERSON.name} — ${SITE_NAME}`;
-export const PAGE_DESCRIPTION = `${PERSON.name}'s open-source projects: ${PERSON.description.replace(/^Software developer\. Builds /, '')} A live index pulled from GitHub.`;
+export const PAGE_DESCRIPTION = `${PERSON.name}'s open-source projects: ${PERSON.makes}. A live index pulled from GitHub.`;
 
 const PERSON_ID = `${SITE_URL}/#person`;
 const SITE_ID = `${SITE_URL}/#website`;
