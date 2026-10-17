@@ -6,8 +6,8 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
-	import { languageColor, type Repo } from '$lib/github';
-	import { cn } from '$lib/utils';
+	import { languageColor, type Repo } from '#lib/github.js';
+	import { cn } from '#lib/utils.js';
 
 	interface Props {
 		repo: Repo;

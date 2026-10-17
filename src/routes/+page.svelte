@@ -1,10 +1,10 @@
 <script lang="ts">
-	import RepoCard from '$lib/components/RepoCard.svelte';
+	import RepoCard from '#lib/components/RepoCard.svelte';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
-	import GithubIcon from '$lib/components/GithubIcon.svelte';
+	import GithubIcon from '#lib/components/GithubIcon.svelte';
 	import { mode, toggleMode } from 'mode-watcher';
-	import { buildJsonLd, jsonLdScript, PAGE_DESCRIPTION, PAGE_TITLE, PERSON, SITE_URL } from '$lib/seo';
+	import { buildJsonLd, jsonLdScript, PAGE_DESCRIPTION, PAGE_TITLE, PERSON, SITE_URL } from '#lib/seo.js';
 
 	let { data } = $props();
 

@@ -1,4 +1,4 @@
-import { SITE_URL } from '$lib/seo';
+import { SITE_URL } from '#lib/seo.js';
 import type { RequestHandler } from './$types';
 
 export const prerender = true;

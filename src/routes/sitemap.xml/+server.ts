@@ -1,5 +1,5 @@
-import { fetchRepos } from '$lib/github.server';
-import { SITE_URL } from '$lib/seo';
+import { fetchRepos } from '#lib/github.server.js';
+import { SITE_URL } from '#lib/seo.js';
 import type { RequestHandler } from './$types';
 
 // Single-page site, so the sitemap's job is the lastmod: the newest push across the repos, which

@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { GITHUB_TOKEN } from '$app/env/private';
 import type { Repo, RepoMedia } from './github';
 
 const USER = 'slastra';
@@ -13,7 +13,7 @@ export function githubHeaders(): Record<string, string> {
 		Accept: 'application/vnd.github+json',
 		'User-Agent': 'dev.lastra.us'
 	};
-	if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
+	if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
 	return headers;
 }
 
@@ -106,7 +106,7 @@ function candidate(entry: TreeEntry, dir: string): Candidate | null {
 
 async function loadScreenshots(): Promise<Map<string, RepoMedia>> {
 	const found = new Map<string, RepoMedia>();
-	if (!env.GITHUB_TOKEN) return found;
+	if (!GITHUB_TOKEN) return found;
 
 	const res = await fetch('https://api.github.com/graphql', {
 		method: 'POST',

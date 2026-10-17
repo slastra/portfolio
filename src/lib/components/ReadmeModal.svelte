@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import XIcon from '@lucide/svelte/icons/x';
 	import GithubIcon from './GithubIcon.svelte';
-	import type { Repo } from '$lib/github';
+	import type { Repo } from '#lib/github.js';
 
 	interface Props {
 		repo: Repo;

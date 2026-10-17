@@ -1,4 +1,4 @@
-import { fetchRepos } from '$lib/github.server';
+import { fetchRepos } from '#lib/github.server.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {

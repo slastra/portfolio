@@ -1,9 +1,9 @@
-import { error, json } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import { marked } from 'marked';
 import markedShiki from 'marked-shiki';
 import { createHighlighter, type Highlighter } from 'shiki';
 import DOMPurify from 'isomorphic-dompurify';
-import { fetchRepos, githubHeaders } from '$lib/github.server';
+import { fetchRepos, githubHeaders } from '#lib/github.server.js';
 import type { RequestHandler } from './$types';
 
 type ReadmeEntry = { html: string; fetchedAt: number };
@@ -72,14 +72,14 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	const cached = cache.get(name);
 	if (cached && Date.now() - cached.fetchedAt < TTL_MS) {
-		return json({ html: cached.html });
+		return Response.json({ html: cached.html });
 	}
 
 	const res = await fetch(`https://api.github.com/repos/slastra/${name}/readme`, {
 		headers: { ...githubHeaders(), Accept: 'application/vnd.github.raw' }
 	});
 
-	if (res.status === 404) return json({ html: '' });
+	if (res.status === 404) return Response.json({ html: '' });
 	if (!res.ok) throw error(502, `GitHub API ${res.status}`);
 
 	const md = await res.text();
@@ -87,5 +87,5 @@ export const GET: RequestHandler = async ({ params }) => {
 	const html = DOMPurify.sanitize(rendered);
 
 	cache.set(name, { html, fetchedAt: Date.now() });
-	return json({ html });
+	return Response.json({ html });
 };
