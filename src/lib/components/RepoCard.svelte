@@ -6,7 +6,7 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
-	import { languageColor, type Repo } from '#lib/github.js';
+	import { codeShares, languageColor, percent, segments, type Repo } from '#lib/github.js';
 	import { cn } from '#lib/utils.js';
 	import { projectPath } from '#lib/seo.js';
 
@@ -141,6 +141,10 @@
 	const padded = $derived(String(index + 1).padStart(2, '0'));
 	const totalPadded = $derived(String(total).padStart(2, '0'));
 	const langColor = $derived(languageColor(repo.language));
+
+	// The repo's own language mix, drawn as a hairline along the card's bottom edge.
+	const mix = $derived(segments(codeShares(repo.languages)));
+	const mixLabel = $derived(mix.map((m) => `${m.name} ${percent(m.value)}`).join(' · '));
 	const pushed = $derived(timeAgo(repo.pushed_at));
 
 	function timeAgo(dateStr: string): string {
@@ -155,12 +159,13 @@
 
 <article
 	class={cn(
-		// No backdrop-blur here. The only thing behind a card is the atmosphere in +layout.svelte,
-		// which is already three blur-[120px] blobs — blurring an established blur again buys
-		// virtually nothing visually, while forcing every card onto Chrome's backdrop-filter path.
-		// That path re-samples the blurred gradient whenever the card lifts on hover, which is
-		// where the banding over neighbouring cards comes from (and why Firefox is clean).
-		'group relative flex flex-col bg-card/60 text-card-foreground rounded-xl border overflow-hidden transition-all duration-500 hover:bg-card hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary/5',
+		// A cell in a gapless ruled grid. It draws both side rules and its grid item sits 1px to the
+		// left (+page.svelte), so its left rule lands on its neighbour's right one; where masonry has
+		// already ended the neighbouring column, the cell still has an edge of its own.
+		// No backdrop-blur: the only thing behind a cell is the soft mesh in +layout.svelte, which
+		// blurring again buys nothing, and Chrome's backdrop-filter path re-samples it on every
+		// hover, which is where banding came from.
+		'group relative flex flex-col text-card-foreground border-x border-b border-rule overflow-hidden transition-colors duration-300 hover:bg-card/60',
 		repo.archived && 'opacity-70',
 		opening && 'cursor-progress'
 	)}
@@ -169,7 +174,7 @@
 		<a
 			{href}
 			onclick={openProject}
-			class="block relative aspect-video overflow-hidden bg-secondary/30 border-b border-border/40"
+			class="block relative aspect-video overflow-hidden bg-secondary/30 border-b border-rule"
 			tabindex="-1"
 			aria-hidden="true"
 		>
@@ -214,11 +219,11 @@
 		</a>
 	{/if}
 
-	<div class={cn('relative flex flex-col gap-3 p-5 pb-6', hasMedia ? 'pt-5' : 'pt-7')}>
+	<div class="relative flex flex-1 flex-col gap-3 p-5 pb-6">
 		<div class="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
 			<span>{padded} <span class="opacity-40">/ {totalPadded}</span></span>
 			{#if repo.archived}
-				<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-border/60 bg-secondary/40">
+				<span class="inline-flex items-center gap-1 px-1.5 py-0.5 border border-border bg-secondary/40">
 					<ArchiveIcon class="size-2.5" />
 					archived
 				</span>
@@ -228,7 +233,7 @@
 		<a
 			{href}
 			onclick={openProject}
-			class="block group/title"
+			class="block group/title outline-none"
 			data-project-title={repo.name}
 			title={repo.name}
 		>
@@ -237,9 +242,13 @@
 			     the fade lives only in that strip: a line that fits never enters it, so hyphenated
 			     names still wrap untouched, and only an overflowing word fades out before the edge.
 			     The mask also clips vertically, so the padding undone by the negative margin keeps
-			     Playfair's ascenders and descenders inside it. -->
+			     Playfair's ascenders and descenders inside it.
+
+			     That reach is also why the link draws its own focus state: Chrome's outline traces the
+			     overhanging heading, so the ring ran into the padding and the card clipped it. Focus
+			     comes back here whenever the readme modal closes, which is when it showed. -->
 			<h2
-				class="font-heading font-bold leading-[1.05] tracking-tight text-[clamp(1.75rem,4.5vw,3rem)] -mr-5 pr-5 py-[0.15em] -my-[0.15em] overflow-x-clip [mask-image:linear-gradient(to_right,#000_calc(100%-1.25rem),transparent_calc(100%-0.25rem))] transition-colors group-hover/title:text-primary"
+				class="font-heading font-bold leading-[1.05] tracking-tight text-[2.25rem] -mr-5 pr-5 py-[0.15em] -my-[0.15em] overflow-x-clip [mask-image:linear-gradient(to_right,#000_calc(100%-1.25rem),transparent_calc(100%-0.25rem))] transition-colors group-hover/title:text-primary group-focus-visible/title:text-primary group-focus-visible/title:underline decoration-2 decoration-primary/50 underline-offset-[0.12em]"
 			>
 				{repo.name}
 			</h2>
@@ -259,7 +268,7 @@
 			{#if repo.language}
 				<span class="inline-flex items-center gap-1.5">
 					<span
-						class="size-2 rounded-full"
+						class="size-2"
 						style="background-color: {langColor}; box-shadow: 0 0 8px color-mix(in oklch, {langColor} 35%, transparent)"
 					></span>
 					<span class="normal-case tracking-normal text-foreground/70">{repo.language}</span>
@@ -320,9 +329,16 @@
 		</div>
 	</div>
 
-	<span
-		aria-hidden="true"
-		class="absolute left-0 top-0 bottom-0 w-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-		style="background: linear-gradient(to bottom, transparent, {langColor} 50%, transparent)"
-	></span>
+	{#if mix.length}
+		<!-- Sits on the cell's bottom rule, so the hairline under each project is its language mix. -->
+		<div
+			class="absolute inset-x-0 bottom-0 flex h-[2px] gap-px opacity-50 group-hover:opacity-100 transition-opacity duration-500"
+			title={mixLabel}
+			aria-hidden="true"
+		>
+			{#each mix as m (m.name)}
+				<span style="flex: {m.value} 1 0; background-color: {m.color}"></span>
+			{/each}
+		</div>
+	{/if}
 </article>

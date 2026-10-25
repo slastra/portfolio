@@ -50,7 +50,7 @@
 <dialog
 	bind:this={dialogEl}
 	onclose={onclose}
-	class="readme-dialog max-w-3xl w-[min(90vw,48rem)] max-h-[85vh] overflow-hidden rounded-2xl border border-border/60 bg-card/95 backdrop-blur-2xl text-card-foreground p-0 shadow-2xl"
+	class="readme-dialog max-w-3xl w-[min(90vw,48rem)] max-h-[85vh] overflow-hidden border border-rule bg-card/95 backdrop-blur-2xl text-card-foreground p-0 shadow-2xl"
 >
 	<div class="flex flex-col h-full max-h-[85vh]">
 		<header class="sticky top-0 z-10 flex items-start justify-between gap-4 px-6 py-5 border-b border-border/40 bg-card/95 backdrop-blur-xl">

@@ -8,7 +8,8 @@
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import GithubIcon from '#lib/components/GithubIcon.svelte';
 	import Seo from '#lib/components/Seo.svelte';
-	import { languageColor } from '#lib/github.js';
+	import SiteFooter from '#lib/components/SiteFooter.svelte';
+	import { codeShares, languageColor, percent, segments } from '#lib/github.js';
 	import {
 		buildProjectJsonLd,
 		PERSON,
@@ -21,6 +22,7 @@
 
 	const repo = $derived(data.repo);
 	const langColor = $derived(languageColor(repo.language));
+	const mix = $derived(segments(codeShares(repo.languages)));
 	const jsonLd = $derived(buildProjectJsonLd(repo, data.summary));
 
 	// Same fallback chain as the card: a video the browser won't decode (HEVC on Linux Chrome)
@@ -54,117 +56,164 @@
 />
 
 <div class="min-h-screen flex flex-col">
-	<header class="border-b border-border/40">
-		<div class="max-w-[1100px] mx-auto px-6 lg:px-10 py-10 lg:py-14 flex flex-col gap-5">
-			<nav aria-label="Breadcrumb">
+	<header class="sticky top-0 z-30 border-b border-rule bg-background/95 backdrop-blur-sm">
+		<div class="flex h-12 items-center justify-between gap-4 px-4 lg:px-6">
+			<nav aria-label="Breadcrumb" class="min-w-0">
 				<ol
-					class="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground"
+					class="flex min-w-0 items-center gap-x-2 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground"
 				>
-					<li>
+					<li class="shrink-0">
 						<a href="/" class="flex items-center gap-1.5 hover:text-foreground transition-colors">
 							<ArrowLeftIcon class="size-3" />
-							{PERSON.name}
+							dev.lastra.us
 						</a>
 					</li>
+					<li aria-hidden="true" class="opacity-40 max-sm:hidden">/</li>
+					<li class="max-sm:hidden"><a href="/" class="hover:text-foreground transition-colors">projects</a></li>
 					<li aria-hidden="true" class="opacity-40">/</li>
-					<li><a href="/" class="hover:text-foreground transition-colors">projects</a></li>
-					<li aria-hidden="true" class="opacity-40">/</li>
-					<li aria-current="page" class="text-foreground/70 normal-case tracking-[0.15em] truncate">
+					<li aria-current="page" class="min-w-0 truncate text-foreground/70 normal-case tracking-[0.15em]">
 						{repo.name}
 					</li>
 				</ol>
 			</nav>
 
-			<div class="flex flex-col gap-3 min-w-0">
-				<h1
-					class="font-heading font-black leading-[0.95] tracking-tight text-[clamp(2.5rem,7vw,5rem)] break-words"
-				>
-					{repo.name}
-				</h1>
-				{#if repo.description}
-					<p class="font-heading text-lg sm:text-xl text-foreground/80 max-w-3xl leading-snug">
-						{repo.description}
-					</p>
-				{/if}
-			</div>
-
-			<div
-				class="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground"
-			>
-				{#if repo.archived}
-					<span
-						class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-border/60 bg-secondary/40"
-					>
-						<ArchiveIcon class="size-2.5" />
-						archived
-					</span>
-				{/if}
-				{#if repo.language}
-					<span class="inline-flex items-center gap-1.5">
-						<span
-							class="size-2 rounded-full"
-							style="background-color: {langColor}; box-shadow: 0 0 8px color-mix(in oklch, {langColor} 35%, transparent)"
-						></span>
-						<span class="normal-case tracking-normal text-foreground/70">{repo.language}</span>
-					</span>
-				{/if}
-				{#if repo.stars > 0}
-					<span class="inline-flex items-center gap-1"><StarIcon class="size-3" />{repo.stars}</span>
-				{/if}
-				{#if repo.forks > 0}
-					<span class="inline-flex items-center gap-1"><GitForkIcon class="size-3" />{repo.forks}</span>
-				{/if}
-				{#if repo.license}
-					<span>{repo.license}</span>
-				{/if}
-				<span>
-					created <time datetime={repo.created_at}>{formatDate(repo.created_at)}</time>
-				</span>
-				<span>
-					updated <time datetime={repo.pushed_at}>{formatDate(repo.pushed_at)}</time>
-				</span>
-			</div>
-
-			{#if repo.topics.length}
-				<ul class="flex flex-wrap gap-1.5" aria-label="Topics">
-					{#each repo.topics as topic (topic)}
-						<li
-							class="px-2 py-0.5 rounded-full border border-border/60 bg-card/40 font-mono text-[11px] text-foreground/70"
-						>
-							{topic}
-						</li>
-					{/each}
-				</ul>
-			{/if}
-
-			<div class="flex flex-wrap items-center gap-1 -ml-2.5">
+			<div class="flex shrink-0 items-center gap-1">
 				<a
 					href={repo.html_url}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider text-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-colors"
+					class="inline-flex h-8 items-center gap-1.5 border border-border px-2.5 text-xs font-mono uppercase tracking-wider text-foreground/70 hover:text-foreground hover:bg-card/80 transition-colors"
 				>
 					<GithubIcon class="size-3.5" />
-					code
+					<span class="max-sm:sr-only">code</span>
 				</a>
 				{#if repo.homepage}
 					<a
 						href={repo.homepage}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider text-primary/90 hover:text-primary hover:bg-primary/10 transition-colors"
+						class="inline-flex h-8 items-center gap-1.5 border border-border px-2.5 text-xs font-mono uppercase tracking-wider text-primary/90 hover:text-primary hover:bg-primary/10 transition-colors"
 					>
 						<ExternalLinkIcon class="size-3.5" />
-						live
+						<span class="max-sm:sr-only">live</span>
 					</a>
 				{/if}
 			</div>
 		</div>
 	</header>
 
-	<main class="flex-1 max-w-[1100px] mx-auto w-full px-6 lg:px-10 py-10 lg:py-14 flex flex-col gap-10">
+	<!-- Ruled, full-bleed and gapless like the index. Named areas give the phone order (title,
+	     details, banner, readme) and the desktop one (details down the right of all three) from a
+	     single source order; see .project-grid below. -->
+	<main class="project-grid flex-1">
+		<div class="[grid-area:title] flex flex-col gap-3 min-w-0 border-b border-rule px-5 py-8 lg:px-10 lg:py-12">
+			<h1
+				class="font-heading font-black leading-[0.95] tracking-tight text-[clamp(2.5rem,6vw,4.5rem)] break-words"
+			>
+				{repo.name}
+			</h1>
+			{#if repo.description}
+				<p class="font-heading text-lg sm:text-xl text-foreground/80 max-w-3xl leading-snug">
+					{repo.description}
+				</p>
+			{/if}
+		</div>
+
+		<aside aria-label="Project details" class="[grid-area:aside] border-b border-rule lg:border-b-0 lg:border-l">
+			<!-- Sticks under the 48px header while the readme scrolls past. -->
+			<div class="lg:sticky lg:top-12">
+				<!-- Ruled cells: two across on a phone, one per row in the desktop column. -->
+				<dl class="grid grid-cols-2 lg:grid-cols-1 -mr-px overflow-hidden">
+					{#if repo.archived}
+						<div class="fact-cell">
+							<dt class="fact-label">status</dt>
+							<dd class="fact-value inline-flex items-center gap-1.5">
+								<ArchiveIcon class="size-3" />archived
+							</dd>
+						</div>
+					{/if}
+					{#if mix.length > 1}
+						<div class="fact-cell col-span-full">
+							<dt class="fact-label">languages</dt>
+							<dd class="flex flex-col gap-2.5">
+								<div class="flex h-1.5 gap-px" aria-hidden="true">
+									{#each mix as m (m.name)}
+										<span style="flex: {m.value} 1 0; background-color: {m.color}"></span>
+									{/each}
+								</div>
+								<ul class="flex flex-wrap gap-x-4 gap-y-1.5 lg:flex-col">
+									{#each mix as m (m.name)}
+										<li class="fact-value inline-flex items-center gap-2">
+											<span class="size-2 shrink-0" style="background-color: {m.color}"></span>
+											{m.name}
+											<span class="ml-auto pl-2 text-muted-foreground tabular-nums">{percent(m.value)}</span>
+										</li>
+									{/each}
+								</ul>
+							</dd>
+						</div>
+					{:else if repo.language}
+						<div class="fact-cell">
+							<dt class="fact-label">language</dt>
+							<dd class="fact-value inline-flex items-center gap-2">
+								<span
+									class="size-2"
+									style="background-color: {langColor}; box-shadow: 0 0 8px color-mix(in oklch, {langColor} 35%, transparent)"
+								></span>
+								{repo.language}
+							</dd>
+						</div>
+					{/if}
+					{#if repo.stars > 0 || repo.forks > 0}
+						<div class="fact-cell">
+							<dt class="fact-label">github</dt>
+							<dd class="fact-value inline-flex items-center gap-3">
+								{#if repo.stars > 0}
+									<span class="inline-flex items-center gap-1" title="Stars">
+										<StarIcon class="size-3" />{repo.stars}<span class="sr-only"> stars</span>
+									</span>
+								{/if}
+								{#if repo.forks > 0}
+									<span class="inline-flex items-center gap-1" title="Forks">
+										<GitForkIcon class="size-3" />{repo.forks}<span class="sr-only"> forks</span>
+									</span>
+								{/if}
+							</dd>
+						</div>
+					{/if}
+					{#if repo.license}
+						<div class="fact-cell">
+							<dt class="fact-label">license</dt>
+							<dd class="fact-value">{repo.license}</dd>
+						</div>
+					{/if}
+					<div class="fact-cell">
+						<dt class="fact-label">created</dt>
+						<dd class="fact-value"><time datetime={repo.created_at}>{formatDate(repo.created_at)}</time></dd>
+					</div>
+					<div class="fact-cell">
+						<dt class="fact-label">updated</dt>
+						<dd class="fact-value"><time datetime={repo.pushed_at}>{formatDate(repo.pushed_at)}</time></dd>
+					</div>
+				</dl>
+
+				{#if repo.topics.length}
+					<div class="flex flex-col gap-2.5 px-5 py-4">
+						<h2 class="fact-label">topics</h2>
+						<ul class="flex flex-wrap gap-1.5">
+							{#each repo.topics as topic (topic)}
+								<li class="border border-border px-2 py-0.5 font-mono text-[11px] text-foreground/70">
+									{topic}
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			</div>
+		</aside>
+
 		{#if data.showBanner && (showVideo || showImage)}
-			<div class="relative aspect-video overflow-hidden rounded-xl border border-border/60 bg-secondary/30">
+			<div class="[grid-area:banner] relative aspect-video overflow-hidden border-b border-rule bg-secondary/30">
 				{#if showVideo}
 					<!-- svelte-ignore a11y_media_has_caption -->
 					<video
@@ -188,66 +237,106 @@
 			</div>
 		{/if}
 
-		<article class="rounded-2xl border border-border/60 bg-card/60 px-6 py-6 sm:px-10 sm:py-10">
+		<article class="[grid-area:readme] min-w-0">
 			<div
-				class="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6 pb-4 border-b border-border/40"
+				class="flex h-10 items-center border-b border-rule px-5 lg:px-10 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
 			>
 				readme · slastra/{repo.name}
 			</div>
-			{#if data.readme === null}
-				<p class="font-mono text-xs uppercase tracking-wider text-destructive">
-					Couldn't load the readme from GitHub.
-				</p>
-			{:else if data.readme === ''}
-				<p class="text-muted-foreground italic text-center py-16">No readme.</p>
-			{:else}
-				<div class="readme-prose">
-					{@html data.readme}
-				</div>
-			{/if}
+			<div class="px-5 py-8 lg:px-10 lg:py-10">
+				{#if data.readme === null}
+					<p class="font-mono text-xs uppercase tracking-wider text-destructive">
+						Couldn't load the readme from GitHub.
+					</p>
+				{:else if data.readme === ''}
+					<p class="text-muted-foreground italic py-16">No readme.</p>
+				{:else}
+					<div class="readme-prose readme-measure">
+						{@html data.readme}
+					</div>
+				{/if}
+			</div>
 		</article>
-
-		{#if data.prev || data.next}
-			<nav aria-label="More projects" class="grid gap-4 sm:grid-cols-2">
-				{#each [{ link: data.prev, dir: 'prev' }, { link: data.next, dir: 'next' }] as { link, dir } (dir)}
-					{#if link}
-						<a
-							href={projectPath(link.name)}
-							class="group flex flex-col gap-1.5 rounded-xl border border-border/60 bg-card/40 px-5 py-4 hover:bg-card hover:border-border transition-colors {dir ===
-							'next'
-								? 'sm:col-start-2 sm:items-end sm:text-right'
-								: ''}"
-						>
-							<span
-								class="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
-							>
-								{#if dir === 'prev'}<ArrowLeftIcon class="size-3" /> previous{:else}next <ArrowRightIcon
-										class="size-3"
-									/>{/if}
-							</span>
-							<span
-								class="font-heading font-bold text-2xl leading-tight tracking-tight transition-colors group-hover:text-primary break-words"
-							>
-								{link.name}
-							</span>
-							{#if link.description}
-								<span class="text-sm text-foreground/60 line-clamp-2">{link.description}</span>
-							{/if}
-						</a>
-					{/if}
-				{/each}
-			</nav>
-		{/if}
 	</main>
 
-	<footer class="border-t border-border/40 mt-10">
-		<div
-			class="max-w-[1100px] mx-auto px-6 lg:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground"
+	{#if data.prev || data.next}
+		<nav aria-label="More projects" class="grid sm:grid-cols-2 border-t border-rule">
+			{#each [{ link: data.prev, dir: 'prev' }, { link: data.next, dir: 'next' }] as { link, dir } (dir)}
+				{#if link}
+					<a
+						href={projectPath(link.name)}
+						class="group flex flex-col gap-1.5 px-5 py-6 lg:px-10 hover:bg-card/60 transition-colors {dir === 'next'
+							? 'sm:col-start-2 sm:items-end sm:text-right max-sm:border-t sm:border-l border-rule'
+							: ''}"
+					>
+						<span
+							class="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
+						>
+							{#if dir === 'prev'}<ArrowLeftIcon class="size-3" /> previous{:else}next <ArrowRightIcon
+									class="size-3"
+								/>{/if}
+						</span>
+						<span
+							class="font-heading font-bold text-2xl leading-tight tracking-tight transition-colors group-hover:text-primary break-words"
+						>
+							{link.name}
+						</span>
+						{#if link.description}
+							<span class="text-sm text-foreground/60 line-clamp-2">{link.description}</span>
+						{/if}
+					</a>
+				{/if}
+			{/each}
+		</nav>
+	{/if}
+
+	<SiteFooter>
+		<a href="/" class="hover:text-foreground transition-colors"
+			><span class="text-foreground/70">dev.lastra.us</span><span class="max-sm:hidden">&nbsp;· all projects</span></a
 		>
-			<a href="/" class="hover:text-foreground transition-colors">
-				<span class="text-foreground/70">dev.lastra.us</span> · all projects
-			</a>
-			<span class="opacity-70">© MMXXVI · shaun lastra</span>
-		</div>
-	</footer>
+	</SiteFooter>
 </div>
+
+<style>
+	.project-grid {
+		display: grid;
+		/* clip, not hidden: it trims the facts' off-edge rule without becoming a scroll container,
+		   which would stop the details column sticking. */
+		overflow-x: clip;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas: 'title' 'aside' 'banner' 'readme';
+	}
+	/* lg. The last row takes the slack so the details column runs the readme's full height. */
+	@media (min-width: 64rem) {
+		.project-grid {
+			grid-template-columns: minmax(0, 1fr) 18rem;
+			grid-template-rows: auto auto 1fr;
+			grid-template-areas: 'title aside' 'banner aside' 'readme aside';
+		}
+	}
+
+	/* One ruled fact. Right and bottom rules, so a two-across phone grid shares hairlines; the dl's
+	   -mr-px pushes the outer right rule off the edge. */
+	.fact-cell {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		padding: 1rem 1.25rem;
+		border-right: 1px solid var(--rule);
+		border-bottom: 1px solid var(--rule);
+	}
+
+	/* The details rail's label/value pair, repeated for every fact. */
+	.fact-label {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.3em;
+		color: var(--muted-foreground);
+	}
+	.fact-value {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: color-mix(in oklch, var(--foreground) 80%, transparent);
+	}
+</style>

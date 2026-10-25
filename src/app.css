@@ -5,7 +5,8 @@
 
 /* Rosé Pine Dawn (light) */
 :root {
-	--radius: 0.625rem;
+	/* Square everywhere: the frame is a ruled grid of hairlines, not floating cards. */
+	--radius: 0rem;
 	--background: oklch(0.97 0.01 75);
 	--foreground: oklch(0.44 0.05 295);
 	--card: oklch(0.98 0.008 80);
@@ -22,6 +23,14 @@
 	--accent-foreground: oklch(0.44 0.05 295);
 	--destructive: oklch(0.58 0.13 10);
 	--border: oklch(0.94 0.015 60);
+	/* The grid's rules, between cells and around the pinned header and footer. Heavier than
+	   --border, which stays for the lighter dividers inside controls and readme content. */
+	--rule: oklch(0.82 0.025 60);
+	/* Strength of the background mesh (+layout.svelte). Dawn's accents are deeper than the dark
+	   variant's, so the same mix reads heavier on paper. */
+	--mesh: 0.45;
+	/* The header activity strip's bars: Dawn's subtle (#797593). */
+	--activity-ink: oklch(0.58 0.04 290);
 	--input: oklch(0.94 0.015 60);
 	--ring: oklch(0.58 0.08 305);
 	--rose: oklch(0.67 0.12 25);
@@ -50,6 +59,12 @@
 	--accent-foreground: oklch(0.90 0.02 295);
 	--destructive: oklch(0.68 0.16 10);
 	--border: oklch(0.90 0.02 295 / 12%);
+	/* Opaque, unlike --border: neighbouring cells draw their shared vertical rule on the same pixel,
+	   and two translucent rules stacked there would come out darker than one. This is the 28% mix
+	   of --foreground over --background, solid. */
+	--rule: oklch(0.38 0.025 295);
+	--mesh: 0.6;
+	--activity-ink: var(--muted-foreground);
 	--input: oklch(0.90 0.02 295 / 15%);
 	--ring: oklch(0.76 0.10 305);
 	--rose: oklch(0.82 0.07 25);
@@ -61,10 +76,10 @@
 }
 
 @theme inline {
-	--radius-sm: calc(var(--radius) - 4px);
-	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: max(0px, calc(var(--radius) - 4px));
+	--radius-md: max(0px, calc(var(--radius) - 2px));
 	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) + 4px);
+	--radius-xl: max(0px, calc(var(--radius) + 4px));
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -81,6 +96,7 @@
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
 	--color-border: var(--border);
+	--color-rule: var(--rule);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
 	--color-rose: var(--rose);
@@ -104,6 +120,17 @@
 }
 
 @layer base {
+	/* The header and footer stay pinned, so focus moves and #anchor jumps have to stop short of
+	   them or they land underneath (WCAG 2.4.11). Sized a little over the bars' heights. */
+	html {
+		scroll-padding-top: 7rem;
+		scroll-padding-bottom: 3rem;
+	}
+	/* Project pages pin a single 48px row rather than the index's two. Keyed off the page's own
+	   grid so it can't leak: route CSS stays loaded after navigating back to the index. */
+	html:has(.project-grid) {
+		scroll-padding-top: 4.5rem;
+	}
 	* {
 		@apply border-border outline-ring/50;
 	}
@@ -119,20 +146,64 @@
 	}
 }
 
-@keyframes fade-up {
+/* Row-major masonry, switched on by the masonry attachment once it has measured the cards. Each
+   child spans one 1px row per pixel of its height plus the gap (src/lib/masonry.ts). */
+[data-masonry] {
+	grid-auto-rows: 1px;
+	row-gap: 0;
+}
+
+/* The language strip's hover preview. Cells that don't match fade, each a little after the one
+   before it (--ripple, set per cell in order), so the change runs across the grid as a wave
+   instead of flipping at once.
+
+   Set on the cell's child: the wrapper's .reveal animation fills forwards with opacity: 1, which
+   would win over anything on the wrapper itself. */
+[data-masonry] > .reveal > * {
+	transition:
+		opacity 280ms ease,
+		filter 280ms ease;
+	transition-delay: var(--ripple, 0ms);
+}
+.previewed-out > * {
+	opacity: 0.25;
+	filter: saturate(0.3);
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-masonry] > .reveal > * {
+		transition-duration: 0ms;
+		transition-delay: 0ms;
+	}
+}
+
+/* Diagonal hatch for the empty foot of short masonry columns, 12px apart. One continuous
+   repeating gradient rather than a small tile: a tile draws a separate stroke per tile, and the
+   anti-aliasing where they meet at the corners broke the lines into dashes. Each fill is given
+   the grid's full size and an offset to its own position (+page.svelte), so every fill shows its
+   slice of the same hatch and the lines carry on across fills. */
+.masonry-gap {
+	background-image: repeating-linear-gradient(
+		45deg,
+		color-mix(in oklch, var(--rule) 75%, transparent) 0,
+		color-mix(in oklch, var(--rule) 75%, transparent) 0.8px,
+		transparent 1.4px,
+		transparent 12px
+	);
+}
+
+/* Opacity only: in a gapless grid a cell sliding into place opens a seam against its neighbours. */
+@keyframes fade-in {
 	from {
 		opacity: 0;
-		transform: translateY(8px);
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
 	}
 }
 
 .reveal {
 	opacity: 0;
-	animation: fade-up 600ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+	animation: fade-in 500ms ease-out forwards;
 }
 
 /* Analogue-TV tuning noise for the banner while media loads. The tile is a mask rather than a
@@ -195,6 +266,16 @@
 	font-size: 15px;
 	line-height: 1.7;
 	word-wrap: break-word;
+}
+
+/* On the project page the readme column runs full width, so running text is held to a reading
+   measure while screenshots, code and tables use the whole cell. A paragraph that only wraps an
+   image (how markdown images arrive) counts as media. */
+.readme-measure > :where(p, ul, ol, blockquote, dl, details, h1, h2, h3, h4, h5, h6) {
+	max-width: 72ch;
+}
+.readme-measure > p:has(> img:only-child, > a:only-child > img:only-child) {
+	max-width: none;
 }
 
 .readme-prose > :first-child { margin-top: 0; }
@@ -312,6 +393,14 @@
 	border: none;
 	border-top: 1px solid var(--border);
 	margin: 2em 0;
+}
+
+.readme-prose video {
+	display: block;
+	width: 100%;
+	border-radius: 0.5rem;
+	margin: 1em 0;
+	background: color-mix(in oklch, var(--accent) 40%, transparent);
 }
 
 .readme-prose img {
