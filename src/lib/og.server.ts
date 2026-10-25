@@ -5,8 +5,8 @@ import { Resvg } from '@resvg/resvg-js';
 // axis, and it reads woff but not woff2. Imported as assets so they ship inside the build.
 import playfair900 from '@fontsource/playfair-display/files/playfair-display-latin-900-normal.woff';
 import playfairItalic400 from '@fontsource/playfair-display/files/playfair-display-latin-400-italic.woff';
-import sourceSerif400 from '@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff';
-import jetbrainsMono500 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff';
+import spectral400 from '@fontsource/spectral/files/spectral-latin-400-normal.woff';
+import plexMono500 from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff';
 import { accentHex, languageHex, type Repo } from './github';
 
 const WIDTH = 1200;
@@ -37,13 +37,13 @@ function loadFonts(): Promise<Font[]> {
 	fontsPromise ??= Promise.all([
 		load(playfair900),
 		load(playfairItalic400),
-		load(sourceSerif400),
-		load(jetbrainsMono500)
+		load(spectral400),
+		load(plexMono500)
 	]).then(([display, displayItalic, serif, mono]) => [
 		{ name: 'Playfair Display', data: display, weight: 900, style: 'normal' },
 		{ name: 'Playfair Display', data: displayItalic, weight: 400, style: 'italic' },
-		{ name: 'Source Serif 4', data: serif, weight: 400, style: 'normal' },
-		{ name: 'JetBrains Mono', data: mono, weight: 500, style: 'normal' }
+		{ name: 'Spectral', data: serif, weight: 400, style: 'normal' },
+		{ name: 'IBM Plex Mono', data: mono, weight: 500, style: 'normal' }
 	]);
 	return fontsPromise;
 }
@@ -68,7 +68,7 @@ function blob(left: string, top: string, size: number, color: string): Node {
 }
 
 const mono = (color: string): Style => ({
-	fontFamily: 'JetBrains Mono',
+	fontFamily: 'IBM Plex Mono',
 	fontSize: 20,
 	letterSpacing: 4,
 	textTransform: 'uppercase',
@@ -166,7 +166,7 @@ function card(repo: Repo): Node {
 									{
 										display: 'block',
 										lineClamp: 3,
-										fontFamily: 'Source Serif 4',
+										fontFamily: 'Spectral',
 										fontSize: 34,
 										lineHeight: 1.3,
 										color: SUBTLE,

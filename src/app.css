@@ -106,9 +106,9 @@
 	--color-gold: var(--gold);
 	--color-foam: var(--foam);
 
-	--font-sans: "Source Serif 4 Variable", "Georgia", ui-serif, serif;
+	--font-sans: "Spectral", "Georgia", ui-serif, serif;
 	--font-heading: "Playfair Display Variable", "Georgia", ui-serif, serif;
-	--font-mono: ui-monospace, "Menlo", "Consolas", monospace;
+	--font-mono: "IBM Plex Mono", ui-monospace, "Menlo", "Consolas", monospace;
 }
 
 @utility font-heading {
@@ -142,7 +142,6 @@
 	body {
 		@apply bg-background text-foreground;
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
-		font-feature-settings: "ss01", "ss02";
 	}
 }
 
