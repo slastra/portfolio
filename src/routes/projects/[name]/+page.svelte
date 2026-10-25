@@ -61,7 +61,7 @@
 					class="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground"
 				>
 					<li>
-						<a href="/" class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+						<a href="/" class="flex items-center gap-1.5 hover:text-foreground transition-colors">
 							<ArrowLeftIcon class="size-3" />
 							{PERSON.name}
 						</a>
