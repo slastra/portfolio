@@ -2,7 +2,7 @@ import { marked } from 'marked';
 import markedShiki from 'marked-shiki';
 import { createHighlighter, type Highlighter } from 'shiki';
 import DOMPurify from 'isomorphic-dompurify';
-import { githubHeaders } from './github.server';
+import { ATTACHMENT_LINE, githubHeaders } from './github.server';
 import type { Repo } from './github';
 
 const USER = 'slastra';
@@ -162,6 +162,40 @@ function plainText(html: string): string {
 		.trim();
 }
 
+// Most READMEs carry `# <repo name>` as their title, which the project page and the modal already
+// print as their own heading. Dropping the repeat also leaves the project page with a single h1.
+// It isn't always the first line (tabctl leads with its demo video) or spelled like the repo
+// ("DP100 Studio" for dp100-studio), so the first h1 outside code fences is compared on letters
+// and digits alone. A title that says something more ("# lastshell: a Quickshell shell") stays.
+function dropTitle(markdown: string, name: string): string {
+	const bare = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+	const lines = markdown.split('\n');
+	let fence: string | null = null;
+	for (let i = 0; i < lines.length; i++) {
+		const opener = /^\s*(`{3,}|~{3,})/.exec(lines[i])?.[1];
+		if (opener && (!fence || opener.startsWith(fence))) {
+			fence = fence ? null : opener;
+			continue;
+		}
+		if (fence) continue;
+		const title = /^#[ \t]+(.+?)[ \t]*#*[ \t]*\r?$/.exec(lines[i])?.[1];
+		if (title === undefined) continue;
+		if (bare(title) === bare(name)) lines.splice(i, 1);
+		break;
+	}
+	return lines.join('\n');
+}
+
+// GitHub turns a bare user-attachments link on its own line into a player; marked would leave it a
+// plain URL. tabctl's demo is one of these, and with no separate banner on its page it would
+// otherwise be the only way to see it.
+function embedAttachments(markdown: string): string {
+	return markdown.replace(
+		ATTACHMENT_LINE,
+		'<video src="$1" controls muted playsinline preload="metadata"></video>'
+	);
+}
+
 /** Rendered, sanitised README for a repo; `{ html: '', text: '' }` when it has none. */
 export async function getReadme(repo: Repo): Promise<Readme> {
 	const cached = cache.get(repo.name);
@@ -183,7 +217,8 @@ export async function getReadme(repo: Repo): Promise<Readme> {
 	} else if (!res.ok) {
 		throw new Error(`GitHub API ${res.status}`);
 	} else {
-		const rendered = await renderer.parse(await res.text(), { async: true });
+		const markdown = embedAttachments(dropTitle(await res.text(), repo.name));
+		const rendered = await renderer.parse(markdown, { async: true });
 		const html = sanitize(rendered, repo.name);
 		readme = { html, text: plainText(html) };
 	}

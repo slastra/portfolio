@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		`/slastra/${escapeRegExp(repo.name)}(?:/|@)[\\w.-]+/(?:docs/)?(?:screenshot|demo)\\.`,
 		'i'
 	);
-	const showBanner = !!repo.media && !(readme?.html && ownMedia.test(readme.html));
+	const showBanner =
+		!!repo.media && !repo.media.fromReadme && !(readme?.html && ownMedia.test(readme.html));
 
 	return { repo, readme: readme?.html ?? null, summary, showBanner, prev, next };
 };

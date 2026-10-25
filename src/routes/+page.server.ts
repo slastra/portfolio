@@ -6,6 +6,7 @@ export const load: PageServerLoad = async () => {
 	return {
 		repos: result.repos,
 		fetchedAt: result.fetchedAt,
+		activity: result.activity,
 		error: result.error ?? null
 	};
 };
