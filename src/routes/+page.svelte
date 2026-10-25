@@ -195,9 +195,19 @@
 								>
 							</div>
 						{/if}
+						<!-- Written for the visitor, in the first person, so it isn't PERSON.description:
+						     that stays the GitHub bio, word for word, for the meta tags and JSON-LD. -->
 						<p class="font-heading text-2xl lg:text-3xl leading-snug text-foreground/80 max-w-3xl">
-							<span class="font-semibold text-foreground">{PERSON.name}</span><span
-								class="text-muted-foreground px-1.5">·</span>{PERSON.description}
+							I’m <span class="font-semibold text-foreground">{PERSON.name}</span>. I build software for
+							businesses, mostly in the liquidation industry, and tools for the Linux desktop. If you have
+							something you’d like built, you can hire me through
+							<a
+								href="https://revolvetrading.com"
+								target="_blank"
+								rel="noopener"
+								class="text-foreground underline decoration-primary/60 decoration-1 underline-offset-4 hover:text-primary transition-colors"
+								>revolvetrading.com</a
+							>.
 						</p>
 						<p class="grid font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
 							<!-- Both lines share one cell so the paragraph keeps the taller one's height: on a
