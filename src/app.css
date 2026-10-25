@@ -107,8 +107,14 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+	/* Paper grain as a repeating 256px tile rather than one SVG stretched over the document: a
+	   page-sized feTurbulence surface outgrows the browser's filter size limit on long pages and
+	   gets clipped or downscaled. The filter region is pinned to the tile (x/y/width/height) so
+	   stitchTiles has the tile's own edges to stitch against and the repeat shows no seams. The
+	   body background propagates to the canvas, so the grain covers any page length. */
 	body {
 		@apply bg-background text-foreground;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
 		font-feature-settings: "ss01", "ss02";
 	}
 }
