@@ -4,9 +4,22 @@ import type { Activity, LanguageShare, Repo, RepoMedia } from './github';
 const USER = 'slastra';
 const TTL_MS = 10 * 60 * 1000;
 
+// When the media/language lookup partly fails, the previous values stand in and the whole entry
+// expires this soon instead, so one GitHub timeout costs a minute of staleness, not ten.
+const DEGRADED_TTL_MS = 60 * 1000;
+
 // Refetch sooner than TTL when the previous attempt errored, so a transient failure
 // (rate-limit, network blip) doesn't pin stale data for the full TTL window.
 const ERROR_BACKOFF_MS = 30 * 1000;
+
+// Long enough for a slow GitHub response, short enough that a hung socket can't hold the very
+// first render (the only one that waits; later ones are served from cache).
+const FETCH_TIMEOUT_MS = 15 * 1000;
+
+// Repos per GraphQL request. Reading tree entries and README blobs is the slow part (a single
+// query over all ~35 repos took 6-10 s and sometimes hit GitHub's 10 s limit with a 502), so the
+// repos are split into small batches that run in parallel and fail independently.
+const BATCH_SIZE = 6;
 
 export function githubHeaders(): Record<string, string> {
 	const headers: Record<string, string> = {
@@ -33,7 +46,7 @@ type RepoApiPayload = {
 	fork: boolean;
 };
 
-type CacheEntry = { repos: Repo[]; fetchedAt: number; activity: Activity | null };
+type CacheEntry = { repos: Repo[]; fetchedAt: number; expiresAt: number; activity: Activity | null };
 let cache: CacheEntry | null = null;
 let lastError: { at: number; message: string } | null = null;
 let inflight: Promise<CacheEntry> | null = null;
@@ -57,29 +70,36 @@ const IMAGE_TYPES: Record<string, string> = {
 	svg: 'image/svg+xml'
 };
 
-// One GraphQL request returns the root and docs/ trees, README and language bytes for every repo,
-// plus the contribution calendar, at once, which keeps all of it at a flat 1 API call instead of
-// several per repo. GraphQL requires a token, so without one we skip it entirely rather than spend
-// the 60/hr anonymous REST budget; cards then go without banners, the language strip without its
-// code view and the header without its activity strip.
-const EXTRAS_QUERY = `query($login: String!) {
+// GraphQL carries everything the REST list lacks: the root and docs/ trees, README and language
+// bytes of each repo, and the contribution calendar. GraphQL requires a token, so without one it is
+// skipped entirely rather than spending the 60/hr anonymous REST budget; cards then go without
+// banners, the language strip without its code view and the header without its activity strip.
+const CALENDAR_QUERY = `query($login: String!) {
 	user(login: $login) {
 		contributionsCollection {
 			contributionCalendar { weeks { contributionDays { date contributionCount } } }
 		}
-		repositories(first: 100, ownerAffiliations: OWNER, isFork: false, privacy: PUBLIC) {
-			nodes {
-				name
-				root: object(expression: "HEAD:") { ... on Tree { entries { name type } } }
-				docs: object(expression: "HEAD:docs") { ... on Tree { entries { name type } } }
-				readme: object(expression: "HEAD:README.md") { ... on Blob { text } }
-				languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
-					edges { size node { name } }
-				}
-			}
-		}
 	}
 }`;
+
+const REPO_FIELDS = `
+	name
+	root: object(expression: "HEAD:") { ... on Tree { entries { name type } } }
+	docs: object(expression: "HEAD:docs") { ... on Tree { entries { name type } } }
+	readme: object(expression: "HEAD:README.md") { ... on Blob { text } }
+	languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
+		edges { size node { name } }
+	}`;
+
+/** One aliased `repository` lookup per name; names travel as variables, never in the query text. */
+function batchQuery(count: number): string {
+	const vars = Array.from({ length: count }, (_, i) => `$n${i}: String!`).join(', ');
+	const fields = Array.from(
+		{ length: count },
+		(_, i) => `r${i}: repository(owner: $owner, name: $n${i}) {${REPO_FIELDS}\n}`
+	).join('\n');
+	return `query($owner: String!, ${vars}) {\n${fields}\n}`;
+}
 
 type TreeEntry = { name: string; type: string };
 type ExtrasNode = {
@@ -89,19 +109,16 @@ type ExtrasNode = {
 	readme: { text?: string | null } | null;
 	languages: { edges?: { size: number; node: { name: string } }[] } | null;
 };
-type ExtrasPayload = {
-	data?: {
-		user?: {
-			repositories?: { nodes?: ExtrasNode[] };
-			contributionsCollection?: {
-				contributionCalendar?: {
-					weeks?: { contributionDays?: { date: string; contributionCount: number }[] }[];
-				};
+type CalendarData = {
+	user?: {
+		contributionsCollection?: {
+			contributionCalendar?: {
+				weeks?: { contributionDays?: { date: string; contributionCount: number }[] }[];
 			};
 		};
 	};
-	errors?: { message: string }[];
 };
+type BatchData = Record<string, ExtrasNode | null>;
 
 type Extras = { media: RepoMedia | null; languages: LanguageShare[] };
 
@@ -128,30 +145,67 @@ function candidate(entry: TreeEntry, dir: string): Candidate | null {
 	};
 }
 
-async function loadExtras(): Promise<{ byRepo: Map<string, Extras>; activity: Activity | null }> {
-	const found = new Map<string, Extras>();
-	if (!GITHUB_TOKEN) return { byRepo: found, activity: null };
-
+async function graphql<T>(query: string, variables: Record<string, string>): Promise<T> {
 	const res = await fetch('https://api.github.com/graphql', {
 		method: 'POST',
 		headers: { ...githubHeaders(), 'Content-Type': 'application/json' },
-		body: JSON.stringify({ query: EXTRAS_QUERY, variables: { login: USER } })
+		body: JSON.stringify({ query, variables }),
+		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
 	});
 	if (!res.ok) throw new Error(`GitHub GraphQL ${res.status}`);
+	const body = (await res.json()) as { data?: T | null; errors?: { message: string }[] };
+	// A repo that can't be resolved comes back as a null field plus an error; the rest of the
+	// batch is still good. Only a response with no data at all is a failure.
+	if (!body.data) throw new Error(body.errors?.[0]?.message ?? 'GitHub GraphQL returned no data');
+	return body.data;
+}
 
-	const body = (await res.json()) as ExtrasPayload;
-	if (body.errors?.length) throw new Error(body.errors[0].message);
-
-	for (const node of body.data?.user?.repositories?.nodes ?? []) {
-		found.set(node.name, {
-			media: pickMedia(node),
-			languages: (node.languages?.edges ?? []).map((e) => ({ name: e.node.name, bytes: e.size }))
-		});
-	}
-	const days = (body.data?.user?.contributionsCollection?.contributionCalendar?.weeks ?? []).flatMap(
+/** The activity strip's data, null without a token. Throws if GitHub fails, so the caller can keep the last good value. */
+async function loadActivity(): Promise<Activity | null> {
+	if (!GITHUB_TOKEN) return null;
+	const data = await graphql<CalendarData>(CALENDAR_QUERY, { login: USER });
+	const days = (data.user?.contributionsCollection?.contributionCalendar?.weeks ?? []).flatMap(
 		(w) => w.contributionDays ?? []
 	);
-	return { byRepo: found, activity: rollingWeeks(days) };
+	return rollingWeeks(days);
+}
+
+/**
+ * Media and languages for each named repo, fetched in parallel batches. A batch that fails puts
+ * its names in `failed` rather than failing the lot, so the caller can fill those in from cache.
+ */
+async function loadExtras(names: string[]): Promise<{ byRepo: Map<string, Extras>; failed: string[] }> {
+	const byRepo = new Map<string, Extras>();
+	const failed: string[] = [];
+	if (!GITHUB_TOKEN) return { byRepo, failed };
+
+	const batches: string[][] = [];
+	for (let i = 0; i < names.length; i += BATCH_SIZE) batches.push(names.slice(i, i + BATCH_SIZE));
+
+	const results = await Promise.allSettled(
+		batches.map((batch) =>
+			graphql<BatchData>(batchQuery(batch.length), {
+				owner: USER,
+				...Object.fromEntries(batch.map((name, i) => [`n${i}`, name]))
+			})
+		)
+	);
+
+	results.forEach((result, b) => {
+		if (result.status === 'rejected') {
+			console.error(`[github] media/languages batch failed (${batches[b].join(', ')}):`, result.reason);
+			failed.push(...batches[b]);
+			return;
+		}
+		for (const node of Object.values(result.value)) {
+			if (!node) continue;
+			byRepo.set(node.name, {
+				media: pickMedia(node),
+				languages: (node.languages?.edges ?? []).map((e) => ({ name: e.node.name, bytes: e.size }))
+			});
+		}
+	});
+	return { byRepo, failed };
 }
 
 /** The calendar's days, oldest first and ending today, regrouped into 52 rolling weeks. */
@@ -239,21 +293,37 @@ function readmeMedia(markdown: string, repo: string): RepoMedia | null {
 	return null;
 }
 
-async function load(): Promise<CacheEntry> {
+/**
+ * One full refresh. `previous` is the last good entry: anything the GraphQL side fails to fetch
+ * this time (a batch's media and languages, or the activity strip) is carried over from it, and
+ * the entry then expires after DEGRADED_TTL_MS so the gap is retried soon.
+ */
+async function load(previous: CacheEntry | null): Promise<CacheEntry> {
 	const apiUrl = `https://api.github.com/users/${USER}/repos?per_page=100&type=owner&sort=updated`;
 
-	// A media or language lookup that fails must never take the page down with it.
-	const [res, extras] = await Promise.all([
-		fetch(apiUrl, { headers: githubHeaders() }),
-		loadExtras().catch(() => ({ byRepo: new Map<string, Extras>(), activity: null }))
-	]);
+	// Started alongside the repo list; a failure is reported as undefined, distinct from the null
+	// that means "no token".
+	const activityP = loadActivity().catch((err) => {
+		console.error('[github] activity lookup failed:', err);
+		return undefined;
+	});
 
+	const res = await fetch(apiUrl, {
+		headers: githubHeaders(),
+		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+	});
 	if (!res.ok) throw new Error(`GitHub API ${res.status}`);
-	const raw = (await res.json()) as RepoApiPayload[];
+	const raw = ((await res.json()) as RepoApiPayload[]).filter((r) => !r.fork);
 
-	const repos: Repo[] = raw
-		.filter((r) => !r.fork)
-		.map((r) => ({
+	const [extras, fetchedActivity] = await Promise.all([
+		loadExtras(raw.map((r) => r.name)),
+		activityP
+	]);
+	const before = new Map(previous?.repos.map((r) => [r.name, r]));
+
+	const repos: Repo[] = raw.map((r) => {
+		const found = extras.byRepo.get(r.name) ?? before.get(r.name);
+		return {
 			name: r.name,
 			description: r.description,
 			html_url: r.html_url,
@@ -267,42 +337,63 @@ async function load(): Promise<CacheEntry> {
 			topics: r.topics ?? [],
 			// GitHub reports NOASSERTION for a LICENSE file it found but couldn't classify.
 			license: r.license?.spdx_id && r.license.spdx_id !== 'NOASSERTION' ? r.license.spdx_id : null,
-			media: extras.byRepo.get(r.name)?.media ?? null,
-			languages: extras.byRepo.get(r.name)?.languages ?? []
-		}));
+			media: found?.media ?? null,
+			languages: found?.languages ?? []
+		};
+	});
 
 	repos.sort((a, b) => {
 		if (b.stars !== a.stars) return b.stars - a.stars;
 		return new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime();
 	});
 
-	return { repos, fetchedAt: Date.now(), activity: extras.activity };
+	const degraded = extras.failed.length > 0 || fetchedActivity === undefined;
+	const now = Date.now();
+	return {
+		repos,
+		fetchedAt: now,
+		expiresAt: now + (degraded ? DEGRADED_TTL_MS : TTL_MS),
+		activity: fetchedActivity === undefined ? (previous?.activity ?? null) : fetchedActivity
+	};
 }
 
-export async function fetchRepos(): Promise<CacheEntry & { error?: string }> {
-	const now = Date.now();
-
-	if (cache && now - cache.fetchedAt < TTL_MS) {
-		if (!lastError) return cache;
-		if (now - lastError.at < ERROR_BACKOFF_MS) return { ...cache, error: lastError.message };
-	}
-
-	inflight ??= load()
+function refresh(): Promise<CacheEntry> {
+	inflight ??= load(cache)
 		.then((entry) => {
 			cache = entry;
 			lastError = null;
 			return entry;
 		})
+		.catch((err: unknown) => {
+			const message = err instanceof Error ? err.message : 'Failed to load repos';
+			lastError = { at: Date.now(), message };
+			console.error('[github] refresh failed:', message);
+			throw err;
+		})
 		.finally(() => {
 			inflight = null;
 		});
+	return inflight;
+}
+
+/**
+ * Stale-while-revalidate: once anything is cached, every request is answered from the cache at
+ * once and an expired entry is refreshed in the background. A GitHub round trip takes seconds, and
+ * no visitor (or crawler) should wait on it. Only the very first request after boot does.
+ */
+export async function fetchRepos(): Promise<CacheEntry & { error?: string }> {
+	const now = Date.now();
+
+	if (cache) {
+		const backingOff = lastError !== null && now - lastError.at < ERROR_BACKOFF_MS;
+		if (now >= cache.expiresAt && !backingOff) refresh().catch(() => {});
+		return lastError ? { ...cache, error: lastError.message } : cache;
+	}
 
 	try {
-		return await inflight;
+		return await refresh();
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Failed to load repos';
-		lastError = { at: Date.now(), message };
-		if (cache) return { ...cache, error: message };
-		return { repos: [], fetchedAt: now, activity: null, error: message };
+		return { repos: [], fetchedAt: now, expiresAt: now, activity: null, error: message };
 	}
 }
