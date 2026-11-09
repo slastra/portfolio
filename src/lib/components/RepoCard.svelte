@@ -8,7 +8,7 @@
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { codeShares, languageColor, percent, segments, type Repo } from '#lib/github.js';
 	import { cn } from '#lib/utils.js';
-	import { projectPath } from '#lib/seo.js';
+	import { projectPath, projectThumb, projectThumbSrcset } from '#lib/seo.js';
 
 	interface Props {
 		repo: Repo;
@@ -205,8 +205,13 @@
 						class="size-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
 					></video>
 				{:else}
+					<!-- A resized WebP from thumb.webp, not the repo's original, which can run to
+					     several MB. sizes is the widest a card gets (its punch-in included), so a 2x
+					     screen picks the 1280 rendition and a 1x screen the 640. -->
 					<img
-						src={repo.media?.image}
+						src={projectThumb(repo, 640)}
+						srcset={projectThumbSrcset(repo)}
+						sizes="(max-width: 40rem) 100vw, 40rem"
 						alt=""
 						loading="lazy"
 						decoding="async"

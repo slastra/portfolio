@@ -55,6 +55,24 @@ export function projectOgImage(name: string): string {
 	return `${projectUrl(name)}/og.png`;
 }
 
+/** The widths thumb.webp renders: a card at 1x and at 2x. Anything else is refused. */
+export const THUMB_WIDTHS = [640, 1280] as const;
+export type ThumbWidth = (typeof THUMB_WIDTHS)[number];
+
+/** Changes on every push, which is when a repo's banner can change. */
+export function thumbVersion(repo: Pick<Repo, 'pushed_at'>): string {
+	return Math.floor(Date.parse(repo.pushed_at) / 1000).toString(36);
+}
+
+/** Card-sized WebP of the repo's banner image (thumb.server.ts). */
+export function projectThumb(repo: Pick<Repo, 'name' | 'pushed_at'>, width: ThumbWidth): string {
+	return `${projectPath(repo.name)}/thumb.webp?w=${width}&v=${thumbVersion(repo)}`;
+}
+
+export function projectThumbSrcset(repo: Pick<Repo, 'name' | 'pushed_at'>): string {
+	return THUMB_WIDTHS.map((w) => `${projectThumb(repo, w)} ${w}w`).join(', ');
+}
+
 /** First ~155 characters, cut at a word boundary: the length search results show before truncating. */
 export function summarize(text: string, max = 155): string {
 	if (text.length <= max) return text;

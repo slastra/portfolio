@@ -1,5 +1,6 @@
 import { GITHUB_TOKEN } from '$app/env/private';
 import type { Activity, LanguageShare, Repo, RepoMedia } from './github';
+import { warmThumbs } from './thumb.server';
 
 const USER = 'slastra';
 const TTL_MS = 10 * 60 * 1000;
@@ -362,6 +363,8 @@ function refresh(): Promise<CacheEntry> {
 		.then((entry) => {
 			cache = entry;
 			lastError = null;
+			// Card thumbnails for any new or changed banner, rendered before a visitor asks.
+			void warmThumbs(entry.repos);
 			return entry;
 		})
 		.catch((err: unknown) => {
