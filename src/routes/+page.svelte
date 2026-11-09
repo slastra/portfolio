@@ -112,11 +112,12 @@
 		<!-- Three columns so the activity strip sits on the true centre line, whatever the widths
 		     of the wordmark and the icons either side. -->
 		<div class="grid h-12 grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 lg:px-6 border-b border-rule">
-			<h1 class="justify-self-start font-heading font-black text-2xl leading-none tracking-tight">
+			<!-- A div, not the h1: the page's one h1 is the intro, which carries the name. -->
+			<div class="justify-self-start font-heading font-black text-2xl leading-none tracking-tight">
 				<span class="text-foreground">dev</span><span class="text-primary">.</span><span
 					class="text-foreground/70 italic font-normal">lastra.us</span
 				>
-			</h1>
+			</div>
 
 			<div class="max-md:hidden">
 				{#if data.activity}
@@ -196,8 +197,10 @@
 							</div>
 						{/if}
 						<!-- Written for the visitor, in the first person, so it isn't PERSON.description:
-						     that stays the GitHub bio, word for word, for the meta tags and JSON-LD. -->
-						<p class="font-heading text-2xl lg:text-3xl leading-snug text-foreground/80 max-w-3xl">
+						     that stays the GitHub bio, word for word, for the meta tags and JSON-LD. It is
+						     the page's h1 so the name sits in the top heading; preflight resets h1 styles,
+						     so it renders exactly as the paragraph did. -->
+						<h1 class="font-heading text-2xl lg:text-3xl leading-snug text-foreground/80 max-w-3xl">
 							I’m <span class="font-semibold text-foreground">{PERSON.name}</span>. I build software for
 							businesses, mostly in the liquidation industry, and tools for the Linux desktop. If you have
 							something you’d like built, you can hire me through
@@ -208,7 +211,7 @@
 								class="text-foreground underline decoration-primary/60 decoration-1 underline-offset-4 hover:text-primary transition-colors"
 								>revolvetrading.com</a
 							>.
-						</p>
+						</h1>
 						<p class="grid font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
 							<!-- Both lines share one cell so the paragraph keeps the taller one's height: on a
 							     phone the synced line wraps to two rows and the filter line fits on one, which

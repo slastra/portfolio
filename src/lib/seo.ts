@@ -15,6 +15,14 @@ export const PERSON = {
 		return `Maker of ${this.makes}.`;
 	},
 	jobTitle: 'Software Developer',
+	// The @id is the business node on revolvetrading.com, whose `founder` points back at #person,
+	// so the two sites read as one person and one business.
+	worksFor: {
+		'@type': 'Organization',
+		'@id': 'https://revolvetrading.com/#identity',
+		name: 'Revolve Trading',
+		url: 'https://revolvetrading.com'
+	},
 	image: 'https://avatars.githubusercontent.com/u/34750676?v=4',
 	// Every public profile that is unambiguously the same person. Search engines reconcile the
 	// entity across these, which is what lets a personal site outrank a people-search listing.
@@ -112,6 +120,7 @@ export function buildJsonLd(repos: Repo[], fetchedAt: number) {
 				familyName: PERSON.familyName,
 				description: PERSON.description,
 				jobTitle: PERSON.jobTitle,
+				worksFor: PERSON.worksFor,
 				image: PERSON.image,
 				mainEntityOfPage: { '@id': PAGE_ID },
 				knowsAbout: languages
